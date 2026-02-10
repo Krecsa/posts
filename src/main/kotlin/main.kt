@@ -23,8 +23,8 @@ data class Post(
     val date: Long = System.currentTimeMillis() / 1000,
     val text: String = "",
     val friendsOnly: Boolean = false,
-    val comments: Comments = Comments(),
-    val likes: Likes = Likes(),
+    val comments: Comments? = null,
+    val likes: Likes? = null,
     val repostsCount: Int = 0,
     val viewsCount: Int = 0,
     val canPin: Boolean = false
@@ -35,18 +35,16 @@ object WallService {
     private var posts = emptyArray<Post>()
     private var nextId: Int = 1
 
+    // Копия с уникальным ID
     fun add(post: Post): Post {
-
-        // Копия с уникальным ID
         val newPost = post.copy(id = nextId)
         posts += newPost
         nextId++
         return newPost
     }
 
+    // Поиск поста с таким же ID и его замена
     fun update(post: Post): Boolean {
-
-        // Поиск поста с таким же ID и его замена
         val index = posts.indexOfFirst { it.id == post.id }
         if (index == -1) return false
         posts[index] = post
@@ -65,7 +63,6 @@ object WallService {
     }
 }
 
-
 fun main() {
 
     val post1 = Post(
@@ -81,10 +78,21 @@ fun main() {
         text = "What do you call a fake noodle? An impasta!"
     )
 
+    // Пост с отключенными лайками и комментариями
+    val post3 = Post(
+        ownerId = 3,
+        text = "A post without user reaction",
+        comments = null,
+        likes = null
+    )
+
     val savedPost1 = WallService.add(post1)
     val savedPost2 = WallService.add(post2)
+    val savedPost3 = WallService.add(post3)
+
     println("New post ID: ${savedPost1.id}")
     println("New post ID: ${savedPost2.id}")
+    println("New post ID: ${savedPost3.id}")
 
     // Успешное обновление поста
     val updatedPost = savedPost1.copy(text = "A gathering of ferrets is known as a business", likes = Likes(count = 10))
