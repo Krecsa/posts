@@ -77,23 +77,34 @@ data class Post(
     val repostsCount: Int = 0,
     val viewsCount: Int = 0,
     val canPin: Boolean = false,
-    val attachments: List<Attachment> = emptyList()  // ← массив вложений
+    val attachments: List<Attachment> = emptyList()
+)
+
+class PostNotFoundException(postId: Int) : Exception("Post with ID $postId not found")
+
+data class Comment(
+    val id: Int = 0,
+    val fromId: Int = 0,
+    val postId: Int = 0,
+    val text: String = "",
+    val date: Long = System.currentTimeMillis() / 1000
 )
 
 object WallService {
 
     private var posts = emptyArray<Post>()
-    private var nextId: Int = 1
+    private var nextPostId: Int = 1
 
-    // Копия с уникальным ID
+    private var comments = emptyArray<Comment>()
+    private var nextCommentId: Int = 1
+
     fun add(post: Post): Post {
-        val newPost = post.copy(id = nextId)
+        val newPost = post.copy(id = nextPostId)
         posts += newPost
-        nextId++
+        nextPostId++
         return newPost
     }
 
-    // Поиск поста с таким же ID и его замена
     fun update(post: Post): Boolean {
         val index = posts.indexOfFirst { it.id == post.id }
         if (index == -1) return false
@@ -109,7 +120,23 @@ object WallService {
 
     fun clear() {
         posts = emptyArray()
-        nextId = 1
+        nextPostId = 1
+    }
+
+    fun createComment(postId: Int, comment: Comment): Comment {
+
+        if (posts.none { it.id == postId }) {
+            throw PostNotFoundException(postId)
+        }
+
+        val newComment = comment.copy(
+            id = nextCommentId,
+            postId = postId,
+            date = System.currentTimeMillis() / 1000
+        )
+        comments += newComment
+        nextCommentId++
+        return newComment
     }
 }
 
@@ -212,28 +239,24 @@ fun main() {
     val isUpdated = WallService.update(updatedPost)
     println("The post has been updated: $isUpdated")
 
-
     // Обновление несуществующего поста
     val fakePost = Post(id = 999, text = "The post was not found")
     val isFailed = WallService.update(fakePost)
     println("The post has been updated $isFailed")
 
-    WallService.printPosts()
-
-    println("\nPost 4 attachments")
-    savedPost4.attachments.forEach { attachment ->
-        println("type: ${attachment.type}")
-        when (attachment) {
-            is PhotoAttachment -> println("Photo: ${attachment.photo.text ?: "without a description"} (${attachment.photo.width}x${attachment.photo.height})")
-        }
-
-        println("\nPost 5 attachments")
-        savedPost5.attachments.forEach { attachment ->
-            println("type: ${attachment.type}")
-            when (attachment) {
-                is VideoAttachment -> println("Video: ${attachment.video.title ?: "without a description"} (${attachment.video.duration} seconds, ${attachment.video.views ?: 0} views)")
-                is AudioAttachment -> println("Audio: ${attachment.audio.artist ?: "unknown artist"} - ${attachment.audio.title ?: "untitled"} (${attachment.audio.duration} seconds)")
-            }
-        }
+    // Попытка добавить комментарий
+    try {
+        val comment = WallService.createComment(
+            postId = savedPost1.id,
+            comment = Comment(
+                fromId = 100,
+                text = "Nice try"
+            )
+        )
+        println("Comment created with ID: ${comment.id}")
+    } catch (e: PostNotFoundException) {
+        println("Error: ${e.message}")
     }
+
+    WallService.printPosts()
 }
