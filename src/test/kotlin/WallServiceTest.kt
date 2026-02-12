@@ -10,6 +10,8 @@ import ru.netology.VideoAttachment
 import ru.netology.Video
 import ru.netology.AudioAttachment
 import ru.netology.Audio
+import ru.netology.Comment
+import ru.netology.PostNotFoundException
 
 class WallServiceTest {
 
@@ -20,7 +22,6 @@ class WallServiceTest {
 
     @Test
     fun add() {
-
         val post = Post(ownerId = 1, text = "Test post")
         val savedPost = WallService.add(post)
         assertNotEquals(0, savedPost.id)
@@ -40,6 +41,7 @@ class WallServiceTest {
         val result = WallService.update(nonExistingPost)
         assertFalse(result)
     }
+
     @Test
     fun addWithAttachments() {
         val post = Post(
@@ -88,5 +90,26 @@ class WallServiceTest {
         )
         val result = WallService.update(updatedPost)
         assertTrue(result)
+    }
+
+    @Test
+    fun createCommentToExistingPost() {
+        val post = WallService.add(Post(ownerId = 1, text = "Backflip"))
+        val comment = WallService.createComment(
+            postId = post.id,
+            comment = Comment(fromId = 100, text = "Nice try")
+        )
+        assertEquals(post.id, comment.postId)
+        assertNotEquals(0, comment.id)
+        assertEquals("Nice try", comment.text)
+        assertEquals(100, comment.fromId)
+    }
+
+    @Test(expected = PostNotFoundException::class)
+    fun createCommentToNotExistingPost() {
+        WallService.createComment(
+            postId = 99999999,
+            comment = Comment(fromId = 100, text = "Fail")
+        )
     }
 }
